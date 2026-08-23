@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Sorting_algorithms;
@@ -8,6 +9,7 @@ public partial class Form1 : Form
     private List<AlgorithmInfo> algorithms = new List<AlgorithmInfo>
     {
         new AlgorithmInfo { Name = "Bogo Sort", SortMethod = SortingFunctions.BogoSort, Note = "" },
+        new AlgorithmInfo {Name = "Bubble Sort", SortMethod = SortingFunctions.BubbleSort, Note = ""},
         // Add more algorithms here
     };
 
@@ -59,13 +61,11 @@ public partial class Form1 : Form
     {
         Button clickedButton = sender as Button;
 
-        foreach (var item in this.Controls)
+        var ButtonsToRemove = this.Controls.OfType<Button>().ToList();
+        foreach (var button in ButtonsToRemove)
         {
-            if (item is Button button)
-            {
-                this.Controls.Remove(button);
-                button.Dispose();
-            }
+            this.Controls.Remove(button);
+            button.Dispose();
         }
 
         //creating textbox and submit button. Submit button has saved the sorting methon in the tag.
@@ -99,6 +99,8 @@ public partial class Form1 : Form
         this.Controls.Add(submitButton);
     }
 
+    private IEnumerator<SortStep> enumerator;
+    private VisualizationPanel Panel;
     private void SubmitButton_Click(object sender, EventArgs e)
     {
         Button clickedButton = sender as Button;
@@ -143,6 +145,11 @@ public partial class Form1 : Form
 
         int[] ToSort = new int[size];
 
+        for (int i = 1; i < size + 1; i++)
+        {
+            ToSort[i - 1] = i;
+        }
+
         var rng = new Random();
 
         for (int i = 0; i < size; i++)
@@ -153,9 +160,147 @@ public partial class Form1 : Form
             ToSort[j] = temp;
         }
 
-        foreach (var step in sortMethod(ToSort))
+        Panel = new VisualizationPanel();
+
+        Panel.CurrentStep = new SortStep { Array = ToSort, SortType = SortType.Begin };
+
+        Panel.Size = new Size(this.ClientSize.Width, this.ClientSize.Height);
+        this.Controls.Add(Panel);
+        Panel.Invalidate();
+
+        enumerator = sortMethod(ToSort).GetEnumerator();
+        System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
+
+        timer.Tick += Timer_Tick;
+        timer.Interval = 1;
+        timer.Start();
+    }
+
+    private void Timer_Tick(object? sender, EventArgs e)
+    {
+        var timer = sender as System.Windows.Forms.Timer;
+        if (enumerator.MoveNext())
         {
-            
+            Panel.CurrentStep = enumerator.Current;
+            Panel.Invalidate();
+        }
+        else
+        {
+            timer.Stop();
+        }
+    }
+}
+public class VisualizationPanel : Panel
+{
+    public SortStep CurrentStep { get; set; }
+    public VisualizationPanel()
+    {
+        this.DoubleBuffered = true;
+        this.Location = new Point(0, 0);
+        this.BackColor = Color.White;
+    }
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        base.OnPaint(e);
+
+        int Height = this.ClientSize.Height;
+        int Width = this.ClientSize.Width;
+
+        int current = Width / CurrentStep.Array.Length;
+        int last = 0;
+
+        using Brush brush = new SolidBrush(Color.Black);
+
+        for (int i = 0; i < CurrentStep.Array.Length; i++)
+        {
+            var rect = new Rectangle();
+            rect.Size = new Size(current - last, Height * CurrentStep.Array[i] / CurrentStep.Array.Length);
+            rect.Location = new Point(last, Height - Height * CurrentStep.Array[i] / CurrentStep.Array.Length);
+
+            e.Graphics.FillRectangle(brush, rect);
+
+            last = current;
+            current = (i + 2) * Width / CurrentStep.Array.Length;
+        }
+
+        switch (CurrentStep.SortType)
+        {
+            case SortType.Swap:
+                {
+                    int i = (int)CurrentStep.IndexA;
+                    int j = (int)CurrentStep.IndexB;
+                    var rect = new Rectangle();
+                    rect.Size = new Size(
+                        (i + 2) * Width / CurrentStep.Array.Length - (i + 1) * Width / CurrentStep.Array.Length,
+                        Height * CurrentStep.Array[i] / CurrentStep.Array.Length);
+
+                    rect.Location = new Point(
+                        (i + 1) * Width / CurrentStep.Array.Length,
+                        Height - Height * CurrentStep.Array[i] / CurrentStep.Array.Length);
+
+                    var rect2 = new Rectangle();
+                    rect2.Size = new Size(
+                        (j + 2) * Width / CurrentStep.Array.Length - (j + 1) * Width / CurrentStep.Array.Length,
+                        Height * CurrentStep.Array[j] / CurrentStep.Array.Length);
+
+                    rect2.Location = new Point(
+                        (j + 1) * Width / CurrentStep.Array.Length,
+                        Height - Height * CurrentStep.Array[j] / CurrentStep.Array.Length);
+
+                    {
+                        using Brush RedBrush = new SolidBrush(Color.Red);
+                        e.Graphics.FillRectangle(RedBrush, rect);
+                        e.Graphics.FillRectangle(RedBrush, rect2);
+                    }
+                }
+                break;
+            case SortType.Compare:
+                {
+                    int i = (int)CurrentStep.IndexA;
+                    int j = (int)CurrentStep.IndexB;
+                    var rect = new Rectangle();
+                    rect.Size = new Size(
+                        (i + 2) * Width / CurrentStep.Array.Length - (i + 1) * Width / CurrentStep.Array.Length,
+                        Height * CurrentStep.Array[i] / CurrentStep.Array.Length);
+
+                    rect.Location = new Point(
+                        (i + 1) * Width / CurrentStep.Array.Length,
+                        Height - Height * CurrentStep.Array[i] / CurrentStep.Array.Length);
+
+                    var rect2 = new Rectangle();
+                    rect2.Size = new Size(
+                        (j + 2) * Width / CurrentStep.Array.Length - (j + 1) * Width / CurrentStep.Array.Length,
+                        Height * CurrentStep.Array[j] / CurrentStep.Array.Length);
+
+                    rect2.Location = new Point(
+                        (j + 1) * Width / CurrentStep.Array.Length,
+                        Height - Height * CurrentStep.Array[j] / CurrentStep.Array.Length);
+
+                    {
+                        using Brush GreenBrush = new SolidBrush(Color.Green);
+                        e.Graphics.FillRectangle(GreenBrush, rect);
+                        e.Graphics.FillRectangle(GreenBrush, rect2);
+                    }
+                }
+                break;
+            case SortType.Done:
+                {
+                    using Brush GreenBrush = new SolidBrush(Color.Green);
+                    current = Width / CurrentStep.Array.Length;
+                    last = 0;
+                    for (int i = 0; i < CurrentStep.Array.Length; i++)
+                    {
+                        var rect = new Rectangle();
+                        rect.Size = new Size(current - last, Height * CurrentStep.Array[i] / CurrentStep.Array.Length);
+                        rect.Location = new Point(last, Height - Height * CurrentStep.Array[i] / CurrentStep.Array.Length);
+
+                        e.Graphics.FillRectangle(GreenBrush, rect);
+
+                        last = current;
+                        current = (i + 2) * Width / CurrentStep.Array.Length;
+                    }
+                    break;
+                }
         }
     }
 }
@@ -165,7 +310,7 @@ public class AlgorithmInfo
     public Func<int[], IEnumerable<SortStep>> SortMethod { get; set; }
     public string Note { get; set; } = "";
 }
-public enum SortType { Compare, Swap, Done}
+public enum SortType { Begin, Compare, Swap, Done }
 public class SortStep
 {
     public int[] Array { get; set; }
@@ -183,19 +328,19 @@ class SortingFunctions
         bool IsSorted = false;
         while (!IsSorted)
         {
-            for (int i = array.Length - 1; i > 0; i--)
+            for (int i = 0; i < array.Length; i++)
             {
-                int j = random.Next(i + 1);
+                int j = random.Next(0, array.Length);
                 int temp = array[i];
                 array[i] = array[j];
                 array[j] = temp;
 
-                yield return new SortStep { Array = array, SortType = SortType.Compare, IndexA = i, IndexB = j };
+                yield return new SortStep { Array = array, SortType = SortType.Swap, IndexA = i, IndexB = j };
             }
             IsSorted = true;
             for (int i = 0; i < array.Length - 1; i++)
             {
-                yield return new SortStep { Array = array, SortType = SortType.Swap, IndexA = i, IndexB = i + 1 };
+                yield return new SortStep { Array = array, SortType = SortType.Compare, IndexA = i, IndexB = i + 1 };
                 if (array[i] > array[i + 1])
                 {
                     IsSorted = false;
@@ -206,5 +351,28 @@ class SortingFunctions
         yield return new SortStep { Array = array, SortType = SortType.Done };
     }
 
+    public static IEnumerable<SortStep> BubbleSort(int[] array)
+    {
+        bool IsSorted = false;
+        int i = 1;
+        while (!IsSorted)
+        {
+            IsSorted = true;
+            for (int j = 0; j < array.Length - i; j++)
+            {
+                yield return new SortStep { Array = array, SortType = SortType.Compare, IndexA = j, IndexB = j + 1 };
+                if (array[j] > array[j + 1])
+                {
+                    IsSorted = false;
+                    int temp = array[j];
+                    array[j] = array[j + 1];
+                    array[j + 1] = temp;
 
+                    yield return new SortStep { Array = array, SortType = SortType.Swap, IndexA = j, IndexB = j + 1 };
+                }
+            }
+            i++;
+        }
+        yield return new SortStep { Array = array, SortType = SortType.Done };
+    }
 }
