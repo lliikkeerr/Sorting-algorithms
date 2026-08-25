@@ -14,7 +14,10 @@ public partial class Form1 : Form
         new AlgorithmInfo {Name = "Shaker Sort", SortMethod = SortingFunctions.ShakerSort, Note = ""},
         new AlgorithmInfo {Name = "Selection Sort", SortMethod = SortingFunctions.SelectSort, Note = ""},
         new AlgorithmInfo {Name = "Double Selection Sort", SortMethod = SortingFunctions.MinMaxSelect, Note = ""},
-        new AlgorithmInfo {Name = "Heap Sort", SortMethod = SortingFunctions.HeapSort, Note = ""}
+        new AlgorithmInfo {Name = "Heap Sort", SortMethod = SortingFunctions.HeapSort, Note = ""},
+        new AlgorithmInfo {Name = "Merge Sort", SortMethod = SortingFunctions.MergeSort, Note = ""},
+        new AlgorithmInfo {Name = "Quick Sort", SortMethod = SortingFunctions.QuickSort, Note = ""},
+        new AlgorithmInfo {Name = "Insertion Sort", SortMethod = SortingFunctions.InsertSort, Note = ""},
         // Add more algorithms here
     };
 
@@ -329,7 +332,7 @@ public class VisualizationPanel : Panel
                 break;
             case SortType.Done:
                 {
-                    using Brush GreenBrush = new SolidBrush(Color.Green);
+                    using Brush GreenBrush = new SolidBrush(Color.Olive);
                     current = Width / CurrentStep.Array.Length;
                     last = 0;
                     for (int i = 0; i < CurrentStep.Array.Length; i++)
@@ -570,5 +573,141 @@ class SortingFunctions
         }
         yield return new SortStep { Array = array, SortType = SortType.Done };
     }
+    public static IEnumerable<SortStep> MergeSort(int[] array)
+    {
+        yield return new SortStep { Array = array, SortType = SortType.Begin };
+        int[] auxiliary = new int[array.Length];
+        int run = 1;
+        while (run < array.Length)
+        {
+            int first = 0;
+            int second = run;
 
+            while (first < array.Length)
+            {
+                int IndexFirst = first;
+                int IndexSecond = second;
+                int GlobalIndex = first;
+                while (IndexFirst < first + run && (IndexSecond < second + run && IndexSecond < array.Length))
+                {
+                    yield return new SortStep { Array = array, SortType = SortType.Compare, IndexA = IndexFirst, IndexB = IndexSecond };
+                    if (array[IndexFirst] > array[IndexSecond])
+                    {
+                        auxiliary[GlobalIndex] = array[IndexSecond];
+                        IndexSecond++;
+                        GlobalIndex++;
+                    }
+                    else
+                    {
+                        auxiliary[GlobalIndex] = array[IndexFirst];
+                        IndexFirst++;
+                        GlobalIndex++;
+                    }
+                }
+                while (IndexFirst < first + run && IndexFirst < array.Length)
+                {
+                    auxiliary[GlobalIndex] = array[IndexFirst];
+                    GlobalIndex++;
+                    IndexFirst++;
+                }
+                while (IndexSecond < second + run && IndexSecond < array.Length)
+                {
+                    auxiliary[GlobalIndex] = array[IndexSecond];
+                    GlobalIndex++;
+                    IndexSecond++;
+                }
+                first += 2 * run;
+                second += 2 * run;
+            }
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = auxiliary[i];
+                yield return new SortStep { Array = array, SortType = SortType.Swap, IndexA = i, IndexB = i };
+            }
+            run *= 2;
+        }
+        yield return new SortStep { Array = array, SortType = SortType.Done };
+    }
+    public static IEnumerable<SortStep> QuickSort(int[] array)
+    {
+        yield return new SortStep { Array = array, SortType = SortType.Begin };
+
+        var S = new Stack<(int low, int high)>();
+
+        S.Push((0, array.Length - 1));
+
+        while (S.Count > 0)
+        {
+            int start;
+            int end;
+            (start, end) = S.Pop();
+
+            if (end - start == 1)
+            {
+                yield return new SortStep { Array = array, SortType = SortType.Compare, IndexA = start, IndexB = end };
+                if (array[start] > array[end])
+                {
+                    yield return new SortStep { Array = array, SortType = SortType.Swap, IndexA = start, IndexB = end };
+                    int temp = array[start];
+                    array[start] = array[end];
+                    array[end] = temp;
+                }
+                continue;
+            }
+            else if (end <= start)
+            {
+                continue;
+            }
+            int pivot = array[end];
+
+            int i = start;
+            int j = end - 1;
+
+            while (i < j)
+            {
+                while (array[i] < pivot && i < end)
+                {
+                    yield return new SortStep { Array = array, SortType = SortType.Compare, IndexA = i, IndexB = end };
+                    i++;
+                }
+                while (array[j] > pivot && j > start)
+                {
+                    yield return new SortStep { Array = array, SortType = SortType.Compare, IndexA = j, IndexB = end };
+                    j--;
+                }
+                if (i < j)
+                {
+                    yield return new SortStep { Array = array, SortType = SortType.Swap, IndexA = i, IndexB = j };
+                    int temp = array[i];
+                    array[i] = array[j];
+                    array[j] = temp;
+                }
+            }
+
+            yield return new SortStep { Array = array, SortType = SortType.Swap, IndexA = i, IndexB = end };
+            int temp2 = array[i];
+            array[i] = array[end];
+            array[end] = temp2;
+
+            S.Push((start, i - 1));
+            S.Push((i + 1, end));
+        }
+        yield return new SortStep { Array = array, SortType = SortType.Done };
+    }
+    public static IEnumerable<SortStep> InsertSort(int[] array)
+    {
+        for (int i = 0; i < array.Length; i++)
+        {
+            int j = i;
+            while (j > 0 && array[j] < array[j - 1])
+            {
+                yield return new SortStep { Array = array, SortType = SortType.Swap, IndexA = j, IndexB = j - 1 };
+                int temp = array[j];
+                array[j] = array[j - 1];
+                array[j - 1] = temp;
+                j--;
+            }
+        }
+        yield return new SortStep { Array = array, SortType = SortType.Done };
+    }
 }
