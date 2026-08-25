@@ -136,6 +136,54 @@ public partial class Form1 : Form
         try
         {
             size = int.Parse(this.Controls["txtInput"].Text);
+            Func<int[], IEnumerable<SortStep>> sortMethod = clickedButton.Tag as Func<int[], IEnumerable<SortStep>>;
+
+            TextBox textBox = this.Controls["txtInput"] as TextBox;
+
+            
+
+            //change of plans, the sortin function will return ienumerable steps, that i will read here and display
+
+            //shuffle and display the array
+
+            int[] ToSort = new int[size];
+
+            for (int i = 1; i < size + 1; i++)
+            {
+                ToSort[i - 1] = i;
+            }
+
+            var rng = new Random();
+
+            for (int i = 0; i < size; i++)
+            {
+                int j = rng.Next(i + 1);
+                int temp = ToSort[i];
+                ToSort[i] = ToSort[j];
+                ToSort[j] = temp;
+            }
+
+            Panel = new VisualizationPanel();
+
+            Panel.CurrentStep = new SortStep { Array = ToSort, SortType = SortType.Begin };
+
+            Panel.Size = new Size(this.ClientSize.Width, this.ClientSize.Height);
+            this.Controls.Add(Panel);
+            Panel.Invalidate();
+
+            enumerator = sortMethod(ToSort).GetEnumerator();
+            System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
+
+            timer.Tick += Timer_Tick;
+            timer.Disposed += Timer_Disposed;
+            timer.Interval = 1;
+            timer.Start();
+
+            this.Controls.Remove(textBox);
+            textBox.Dispose();
+
+            this.Controls.Remove(clickedButton);
+            clickedButton.Dispose();
         }
         catch (Exception ex)
         {
@@ -153,52 +201,7 @@ public partial class Form1 : Form
             return;
         }
 
-        Func<int[], IEnumerable<SortStep>> sortMethod = clickedButton.Tag as Func<int[], IEnumerable<SortStep>>;
-
-        TextBox textBox = this.Controls["txtInput"] as TextBox;
-
-        this.Controls.Remove(textBox);
-        textBox.Dispose();
-
-        this.Controls.Remove(clickedButton);
-        clickedButton.Dispose();
-
-        //change of plans, the sortin function will return ienumerable steps, that i will read here and display
-
-        //shuffle and display the array
-
-        int[] ToSort = new int[size];
-
-        for (int i = 1; i < size + 1; i++)
-        {
-            ToSort[i - 1] = i;
-        }
-
-        var rng = new Random();
-
-        for (int i = 0; i < size; i++)
-        {
-            int j = rng.Next(i + 1);
-            int temp = ToSort[i];
-            ToSort[i] = ToSort[j];
-            ToSort[j] = temp;
-        }
-
-        Panel = new VisualizationPanel();
-
-        Panel.CurrentStep = new SortStep { Array = ToSort, SortType = SortType.Begin };
-
-        Panel.Size = new Size(this.ClientSize.Width, this.ClientSize.Height);
-        this.Controls.Add(Panel);
-        Panel.Invalidate();
-
-        enumerator = sortMethod(ToSort).GetEnumerator();
-        System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
-
-        timer.Tick += Timer_Tick;
-        timer.Disposed += Timer_Disposed;
-        timer.Interval = 1;
-        timer.Start();
+        
     }
 
     private void Timer_Disposed(object? sender, EventArgs e)
@@ -332,7 +335,7 @@ public class VisualizationPanel : Panel
                 break;
             case SortType.Done:
                 {
-                    using Brush GreenBrush = new SolidBrush(Color.Olive);
+                    using Brush GreenBrush = new SolidBrush(Color.DeepPink);
                     current = Width / CurrentStep.Array.Length;
                     last = 0;
                     for (int i = 0; i < CurrentStep.Array.Length; i++)
